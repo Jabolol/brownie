@@ -37,7 +37,8 @@ export const config: RouteConfig = {
 
 5. This will make the endpoints `/cocoa` and `/vanilla` available
 
-> [!NOTE] It is common practice to make your routes ingredients of your brownie!
+> [!NOTE]
+> It is common practice to make your routes ingredients of your brownie!
 
 6. Deploy to [Deno Deploy](https://deno.com/deploy) and fill in the environment
    variables:
