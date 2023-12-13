@@ -6,6 +6,7 @@
  * @modifications
  * - Removed deprecated interface `ConnInfo`
  * - Refactored `handler` to make it fresh-agnostic
+ * - Only report `svg` files
  *
  * @license MIT The original work is licensed under the MIT License.
  * {@link https://github.com/denoland/ga4/blob/main/LICENSE.md}
@@ -51,7 +52,7 @@ function ga4(
 
     let event: Event | null = null;
     const contentType = response.headers.get("content-type");
-    if (/text\/html/.test(contentType!)) {
+    if (/image\/svg\+xml/.test(contentType!)) {
       event = { name: "page_view", params: {} }; // Probably an old browser.
     }
 
