@@ -102,6 +102,7 @@ export function report(
   const start = performance.now();
   try {
     const headers = new Headers(resp.headers);
+    headers.set("ga4", "success");
     res = new Response(resp.body, { status: resp.status, headers });
     return res;
   } catch (e) {
