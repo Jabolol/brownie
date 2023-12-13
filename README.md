@@ -1,6 +1,6 @@
-# brownie
-
 <img align="right" src="./assets/brownie.png" height="150px" alt="a kawaii brownie" />
+
+# brownie
 
 Add support for **Google Analytics** to your GitHub readme.
 
@@ -37,10 +37,10 @@ export const config: RouteConfig = {
 
 5. This will make the endpoints `/cocoa` and `/vanilla` available
 
-> [!NOTE]
-> It is common practice to make your routes ingredients of your brownie!
+> [!NOTE] It is common practice to make your routes ingredients of your brownie!
 
-6. Deploy to [Deno Deploy](https://deno.com/deploy) and fill in the environment variables:
+6. Deploy to [Deno Deploy](https://deno.com/deploy) and fill in the environment
+   variables:
 
 7. Add your freshly baked images to your readme
 
@@ -49,3 +49,16 @@ https://[your-deployed-url].deno.dev/cocoa
 ```
 
 8. The visits will be tracked in your Google Analytics dashboard!
+
+## contributing
+
+Contributions are welcome! Feel free to open an issue or submit a pull request.
+Please run the following commands and ensure that there are no errors:
+
+```sh
+deno fmt && deno lint
+```
+
+## license
+
+This project is licensed under the [MIT license](./LICENSE).
