@@ -103,7 +103,7 @@ export function report(
   const start = performance.now();
   try {
     const headers = new Headers(resp.headers);
-    headers.set("ga4", "success");
+    headers.set("cache-control", "max-age=0, no-cache, no-store, must-revalidate");
     res = new Response(resp.body, { status: resp.status, headers });
     return res;
   } catch (e) {
