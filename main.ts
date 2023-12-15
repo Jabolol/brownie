@@ -1,16 +1,74 @@
 import { report } from "~/utils.ts";
 import { config } from "~/config.ts";
-import { function as func, option, task, taskEither } from "fp-ts";
+import {
+  array,
+  either,
+  function as func,
+  option,
+  task,
+  taskEither,
+} from "fp-ts";
+
+const kv = await Deno.openKv();
+
+/**
+ * This cron job retrieves the bytes of the images from the URLs specified in the configuration object and stores them in the KV store.
+ */
+const cron = async () => {
+  const raw: either.Either<Error, [string, ArrayBuffer]>[] = await func.pipe(
+    config.routes,
+    Object.entries<string>,
+    array.map(
+      ([key, value]) => [key, retrieve(value)] as const,
+    ),
+    array.map(([key, value]) =>
+      func.pipe(
+        value,
+        taskEither.map((bytes) => [key, bytes] as const),
+      )
+    ),
+    array.sequence(task.ApplicativeSeq),
+  )();
+
+  const result = func.pipe(
+    raw,
+    array.map(
+      either.map(
+        ([key, value]) => kv.set(["cache", key], value),
+      ),
+    ),
+    array.sequence(either.Applicative),
+    either.match(
+      (error) => {
+        throw new Error(`Failed to process array: ${error}`);
+      },
+      (elem: Promise<Deno.KvCommitResult>[]) => elem,
+    ),
+  );
+
+  await Promise.all(result);
+};
 
 /**
  * Fetches the bytes from the specified URL.
  * @param url - The URL to fetch the bytes from.
  * @returns A promise that resolves to an ArrayBuffer.
  */
+// TODO: fpts-ify this function
 const fetchBytes = async (url: string) => {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error("Failed to fetch resource");
-  return response.arrayBuffer();
+  const path = new URL(url).pathname.slice(1);
+  const { value } = await kv.get<ArrayBuffer>(["cache", path]);
+  if (!value) {
+    console.warn(`Cache miss => ${url}`);
+    const response = await fetch(url);
+    const bytes = await response.arrayBuffer();
+    await kv.set(["cache", path], bytes);
+    return bytes;
+  } else {
+    console.log(`Cache hit => ${url}`);
+  }
+
+  return value;
 };
 
 /**
@@ -31,6 +89,7 @@ const retrieve = func.flow(
  * @param request - The request object.
  * @returns The path of the request URL.
  */
+// TODO: remove duplication with `retrieve`
 const path = func.flow(
   (request: Request) => new URL(request.url),
   (url) => url.pathname,
@@ -73,4 +132,8 @@ const handler = (request: Request, ctx: Deno.ServeHandlerInfo) =>
     task.map((response) => report(request, response, ctx)),
   )();
 
-Deno.serve(handler);
+Deno.cron("refresh kv store", config.schedule, cron);
+
+if (import.meta.main) {
+  Deno.serve(handler);
+}
