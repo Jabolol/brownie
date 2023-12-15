@@ -6,7 +6,7 @@ interface RouteConfig {
   /**
    * Cron schedule configuration object.
    */
-  schedule: Deno.CronSchedule;
+  schedule: string | Deno.CronSchedule;
 }
 
 /**
@@ -19,9 +19,5 @@ export const config: RouteConfig = {
     vanilla:
       "https://github-readme-streak-stats-eight-iota.vercel.app/?user=Jabolol&theme=dracula&hide_border=false",
   },
-  schedule: {
-    minute: {
-      every: 20,
-    },
-  },
+  schedule: "*/20 * * * *",
 };

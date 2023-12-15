@@ -34,16 +34,12 @@ export const config: RouteConfig = {
     cocoa: "https://my-stats.dev/contribs",
     vanilla: "https://my-stats.dev/issues",
   },
-  schedule: {
-    minute: {
-      every: 20,
-    },
-  },
+  schedule: "*/20 * * * *",
 };
 ```
 
 5. This will make the endpoints `/cocoa` and `/vanilla` available and cache the
-   images every 20 minutes. You can add as many routes as you want!
+   images every `20` minutes. You can add as many routes as you want!
 
 > [!NOTE]
 > It is common practice to make your routes ingredients of your brownie!
