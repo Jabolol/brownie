@@ -18,9 +18,7 @@ const cron = async () => {
   const raw: either.Either<Error, [string, ArrayBuffer]>[] = await func.pipe(
     config.routes,
     Object.entries<string>,
-    array.map(
-      ([key, value]) => [key, retrieve(value)] as const,
-    ),
+    array.map(([key]) => [key, retrieve(option.some(true))(key)] as const),
     array.map(([key, value]) =>
       func.pipe(
         value,
@@ -50,25 +48,56 @@ const cron = async () => {
 };
 
 /**
- * Fetches the bytes from the specified URL.
- * @param url - The URL to fetch the bytes from.
- * @returns A promise that resolves to an ArrayBuffer.
+ * Retrieves the bytes of an image from the specified URL and stores it in the KV store.
+ * If the image is already cached, it retrieves it from the cache instead.
+ * @param key - The key to use for the cache defined in the configuration object.
+ * @param overwrite - An optional flag indicating whether to overwrite the cached image. Defaults to `option.none`.
+ * @returns A `taskEither` that resolves to the retrieved bytes of the image.
  */
-// TODO: fpts-ify this function
-const fetchBytes = async (url: string) => {
-  const path = new URL(url).pathname.slice(1);
-  const { value } = await kv.get<ArrayBuffer>(["cache", path]);
-  if (!value) {
-    console.warn(`Cache miss => ${url}`);
-    const response = await fetch(url);
-    const bytes = await response.arrayBuffer();
-    await kv.set(["cache", path], bytes);
-    return bytes;
-  } else {
-    console.log(`Cache hit => ${url}`);
-  }
+export const fetchBytes = async (
+  key: string,
+  overwrite: option.Option<boolean> = option.none,
+) => {
+  const url = func.pipe(
+    key,
+    (key) => config.routes[key],
+    option.fromNullable,
+    option.getOrElse(() => Deno.env.get("FALLBACK_URL")!),
+  );
 
-  return value;
+  const cache = func.pipe(
+    kv.get<ArrayBuffer>(["cache", key]),
+    taskEither.of,
+    taskEither.flatMap((promise) => taskEither.fromTask(() => promise)),
+    taskEither.flatMap(func.flow(
+      ({ value }) => value,
+      option.fromNullable,
+      option.match(
+        () => data,
+        (value) => taskEither.right(value),
+      ),
+    )),
+  );
+
+  const data = func.pipe(
+    url,
+    taskEither.tryCatchK(
+      () => fetch(url),
+      (reason) => new Error(String(reason)),
+    ),
+    taskEither.map((response) => response.arrayBuffer()),
+    taskEither.flatMap((promise) => taskEither.fromTask(() => promise)),
+  );
+
+  const result = await func.pipe(
+    overwrite,
+    option.match(
+      () => cache,
+      (overwrite) => overwrite ? data : cache,
+    ),
+  )();
+
+  return taskEither.fromEither(result);
 };
 
 /**
@@ -77,26 +106,24 @@ const fetchBytes = async (url: string) => {
  * @param request - The request object.
  * @returns The retrieved value or the fallback URL.
  */
-const retrieve = func.flow(
-  taskEither.tryCatchK(
-    fetchBytes,
-    (reason) => new Error(String(reason)),
-  ),
-);
+const retrieve = (overwrite: option.Option<boolean>) =>
+  func.flow(
+    taskEither.tryCatchK(
+      (url: string) => fetchBytes(url, overwrite),
+      (reason) => new Error(String(reason)),
+    ),
+    taskEither.flatten,
+  );
 
 /**
  * Retrieves the path of the request URL given the request object.
  * @param request - The request object.
  * @returns The path of the request URL.
  */
-// TODO: remove duplication with `retrieve`
-const path = func.flow(
+export const path = func.flow(
   (request: Request) => new URL(request.url),
   (url) => url.pathname,
   (pathname) => pathname.slice(1),
-  (pathname) => config.routes[pathname],
-  option.fromNullable,
-  option.getOrElse(() => Deno.env.get("FALLBACK_URL")!),
 );
 
 /**
@@ -127,7 +154,7 @@ const handler = (request: Request, ctx: Deno.ServeHandlerInfo) =>
   func.pipe(
     request,
     path,
-    retrieve,
+    retrieve(option.none),
     build,
     task.map((response) => report(request, response, ctx)),
   )();

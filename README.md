@@ -3,7 +3,8 @@
 # brownie
 
 Add support for **Google Analytics** to your GitHub readme and cache your images
-for a faster loading experience!
+for a faster loading experience! Built using [`deno`](https://deno.land) and
+[`fp-ts`](https://github.com/gcanti/fp-ts).
 
 ## getting started
 
