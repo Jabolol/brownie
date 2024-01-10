@@ -82,7 +82,13 @@ export const fetchBytes = async (
   const data = func.pipe(
     url,
     taskEither.tryCatchK(
-      () => fetch(url),
+      async () => {
+        const request = await fetch(url);
+        if (!request.ok) {
+          throw new Error(`Request failed with status ${request.status}`);
+        }
+        return request;
+      },
       (reason) => new Error(String(reason)),
     ),
     taskEither.map((response) => response.arrayBuffer()),
