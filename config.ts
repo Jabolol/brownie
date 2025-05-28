@@ -1,4 +1,4 @@
-interface RouteConfig {
+export interface RouteConfig {
   /**
    * Route mapping configuration object.
    */

@@ -1,7 +1,7 @@
 {
   "lock": false,
   "tasks": {
-    "start": "deno run --watch --env --allow-env=GA4_MEASUREMENT_ID,FALLBACK_URL --allow-net --unstable main.ts"
+    "start": "deno run --watch --env --allow-env=GA4_MEASUREMENT_ID,FALLBACK_URL --allow-net --unstable-kv --unstable-cron main.ts"
   },
   "imports": {
     "fp-ts": "npm:fp-ts",
