@@ -15,7 +15,7 @@
  * © Jabolo 2023
  * Licensed under the terms of the MIT License.
  */
-import { Event, GA4Report, isDocument, isServerError } from "ga4";
+import { Event, GA4Report, isServerError } from "ga4";
 
 const GA4_MEASUREMENT_ID = Deno.env.get("GA4_MEASUREMENT_ID");
 
@@ -43,17 +43,19 @@ function ga4(
     if (!/^(GET|POST)$/.test(request.method)) {
       return;
     }
+    // Check if this is an SVG file that we want to track
+    const contentType = response.headers.get("content-type");
+    const isSvg = /image\/svg\+xml/.test(contentType || "");
 
-    // If the visitor is using a web browser, only create events when we serve
-    // a top level documents or download; skip assets like css, images, fonts.
-    if (!isDocument(request, response) && error == null) {
+    // Only track SVGs or errors
+    if (!isSvg && error == null) {
       return;
     }
 
     let event: Event | null = null;
-    const contentType = response.headers.get("content-type");
-    if (/image\/svg\+xml/.test(contentType!)) {
-      event = { name: "page_view", params: {} }; // Probably an old browser.
+
+    if (isSvg) {
+      event = { name: "page_view", params: {} };
     }
 
     if (event == null && error == null) {
@@ -103,7 +105,11 @@ export function report(
   const start = performance.now();
   try {
     const headers = new Headers(resp.headers);
-    headers.set("cache-control", "max-age=0, no-cache, no-store, must-revalidate");
+    headers.set(
+      "cache-control",
+      "max-age=0, no-cache, no-store, must-revalidate",
+    );
+
     res = new Response(resp.body, { status: resp.status, headers });
     return res;
   } catch (e) {
