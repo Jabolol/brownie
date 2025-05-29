@@ -1,4 +1,4 @@
-import { function as F, io as IO, readerTaskEither as RTE } from "fp-ts";
+import { function as F, readerTaskEither as RTE } from "fp-ts";
 import { report } from "~/utils.ts";
 import type {
   Dependencies,
@@ -34,9 +34,7 @@ export const handleRequest = (
     getOrFetchImageBytes(routeKey, false),
     RTE.map(createImageResponse),
     RTE.orElse((error) => RTE.right(createErrorResponse(error))),
-    RTE.chainFirst((response) =>
-      RTE.fromIO(IO.of(report(request, response, ctx)))
-    ),
+    RTE.map((response) => report(request, response, ctx)),
   );
 };
 
